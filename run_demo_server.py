@@ -36,9 +36,9 @@ def get_host_info():
 def get_predictor(checkpoint_path):
     logger.info('loading model')
     import tensorflow as tf
-    import model
-    from icdar import restore_rectangle
-    import lanms
+    from models import model
+    from layers.data_layer import restore_rectangle
+    from utils import lanms
     from eval import resize_image, sort_poly, detect
 
     input_images = tf.placeholder(tf.float32, shape=[None, None, None, 3], name='input_images')

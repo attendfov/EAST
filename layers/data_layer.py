@@ -11,8 +11,8 @@ import matplotlib.patches as Patches
 from shapely.geometry import Polygon
 
 import tensorflow as tf
-
-from data_util import GeneratorEnqueuer
+from utils.config import FLAGS
+from utils.data_util import GeneratorEnqueuer
 
 def get_images():
     files = []

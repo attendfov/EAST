@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-import model
-import icdar
+from models import model
+from utils import data_util
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -131,9 +131,9 @@ def main(argv=None):
             if FLAGS.pretrained_model_path is not None:
                 variable_restore_op(sess)
 
-        data_generator = icdar.get_batch(num_workers=FLAGS.num_readers,
-                                         input_size=FLAGS.input_size,
-                                         batch_size=FLAGS.batch_size_per_gpu * len(gpus))
+        data_generator = data_util.get_batch(num_workers=FLAGS.num_readers,
+                                             input_size=FLAGS.input_size,
+                                             batch_size=FLAGS.batch_size_per_gpu * len(gpus))
 
         start = time.time()
         for step in range(FLAGS.max_steps):
@@ -162,6 +162,7 @@ def main(argv=None):
                                                                                              input_geo_maps: data[3],
                                                                                              input_training_masks: data[4]})
                 summary_writer.add_summary(summary_str, global_step=step)
+
 
 if __name__ == '__main__':
     tf.app.run()

@@ -3,22 +3,39 @@ import glob
 import csv
 import cv2
 import time
+import io
 import os
 import numpy as np
-import scipy.optimize
+
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as Patches
+import xml.etree.ElementTree as ET
 from shapely.geometry import Polygon
 
 import tensorflow as tf
 from utils.config import FLAGS
 from utils.data_util import GeneratorEnqueuer
 
-def get_images():
+
+def get_images(data_dir):
     files = []
     for ext in ['jpg', 'png', 'jpeg', 'JPG']:
-        files.extend(glob.glob(
-            os.path.join(FLAGS.training_data_path, '*.{}'.format(ext))))
+        files.extend(glob.glob('{}/*.{}'.format(data_dir, ext)))
+    return files
+
+
+def get_images_by_list(img_list_path):
+    with io.open(img_list_path, 'r', encoding='utf-8') as fid:
+        files = [line.strip() for line in fid.readlines()]
+        print("Find {} images in {}".format(len(files), img_list_path))
+    return files
+
+
+def get_labels_by_list(xml_list_path):
+    with io.open(xml_list_path, 'r', encoding='utf-8') as fid:
+        files = [line.strip() for line in fid.readlines()]
+        print("Find {} images in {}".format(len(files), xml_list_path))
     return files
 
 
@@ -46,6 +63,54 @@ def load_annoataion(p):
             else:
                 text_tags.append(False)
         return np.array(text_polys, dtype=np.float32), np.array(text_tags, dtype=np.bool)
+
+
+def permute(ori_poly):
+    poly = np.array(ori_poly, dtype=np.float32)
+    num_pt = poly.shape[0]
+    p = np.zeros((num_pt, 2), dtype=np.float32)
+    ind = np.argsort(poly[:, 0])[:2]
+    pt_1 = ind[np.argmin(poly[ind, 1])]
+    for i in range(num_pt):
+        p[i] = poly[(i + pt_1) % num_pt]
+    return p.tolist()
+
+
+def compute_rotate_angle(poly):
+    """ compute rotate angle """
+    angle = np.arctan2(poly[1][1] - poly[0][1], poly[1][0] - poly[0][0])
+    angle = 180.0 * angle / np.pi
+    return angle
+
+
+def parse_xml(xml_file):
+    """ parse xml file """
+    text_polys, text_tags = [], []
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+    for child in root.findall('object_polygon'):
+        poly = []
+        for point in child.find('points').find('point'):
+            x = float(point.find('x').text)
+            y = float(point.find('y').text)
+            poly.append([x, y])
+
+        if FLAGS.permute_points:
+            poly = permute(poly)
+
+        text_polys.append(poly)
+        label = child.find('text').text
+        tag = False
+        if label in ('*', '###'):
+            tag = True
+
+        # ignore large rotate text poly
+        if FLAGS.ignore_large_rotate_poly:
+            if abs(compute_rotate_angle(poly)) > 15.0:
+                tag = True
+
+        text_tags.append(tag)
+    return np.array(text_polys, dtype=np.float32), np.array(text_tags, dtype=np.bool)
 
 
 def polygon_area(poly):
@@ -91,6 +156,37 @@ def check_and_validate_polys(polys, tags, xxx_todo_changeme):
         validated_polys.append(poly)
         validated_tags.append(tag)
     return np.array(validated_polys), np.array(validated_tags)
+
+
+def random_rotate_4dir(img, text_polys):
+    """ rotate image in four directions randomly """
+    h, w = img.shape[:2]
+    rotate_polys = np.zeros_like(text_polys)
+    rand_value = np.random.random()
+    if rand_value < 5.0 / 8.0:  # rotate 0
+        rotate_image = img.copy()
+        rotate_polys = text_polys.copy()
+    elif rand_value < 6.0 / 8.0:  #rotate 90
+        rotate_image = np.transpose(img, (1, 0, 2))
+        # flip upper-down
+        rotate_image = np.flip(rotate_image, axis=0)
+        rotate_polys[:, :, 0] = text_polys[:, :, 1]
+        rotate_polys[:, :, 1] = w - text_polys[:, :, 0]
+    elif rand_value < 7.0 / 8.0:  # rotate 180
+        # flip upper - down
+        rotate_image = np.flip(img, axis=0)
+        # flip left - right
+        rotate_image = np.flip(rotate_image, axis=1)
+        rotate_polys[:, :, 0] = w - text_polys[:, :, 0]
+        rotate_polys[:, :, 1] = h - text_polys[:, :, 1]
+    else:
+        rotate_image = np.transpose(img, (1, 0, 2))
+        # flip left-right
+        rotate_image = np.flip(rotate_image, axis=1)
+        rotate_polys[:, :, 0] = h - text_polys[:, :, 1]
+        rotate_polys[:, :, 1] = text_polys[:, :, 0]
+
+    return rotate_image, rotate_polys
 
 
 def crop_area(im, polys, tags, crop_background=False, max_tries=50):

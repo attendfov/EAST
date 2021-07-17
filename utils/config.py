@@ -1,11 +1,12 @@
+# _*_ coding: utf-8 _*_
 import tensorflow as tf
 
-#common
+#common setting
 tf.app.flags.DEFINE_string('gpu_list', '1', '')
 tf.app.flags.DEFINE_string('checkpoint_path', '/tmp/east_resnet_v1_50_rbox/', '')
 tf.app.flags.DEFINE_integer('input_size', 512, '')
 
-#multi-gpu train
+#multi-gpu train setting
 tf.app.flags.DEFINE_integer('batch_size_per_gpu', 14, '')
 tf.app.flags.DEFINE_integer('num_readers', 16, '')
 tf.app.flags.DEFINE_float('learning_rate', 0.0001, '')
@@ -16,7 +17,7 @@ tf.app.flags.DEFINE_integer('save_checkpoint_steps', 1000, '')
 tf.app.flags.DEFINE_integer('save_summary_steps', 100, '')
 tf.app.flags.DEFINE_string('pretrained_model_path', None, '')
 
-#data layer
+#data_layer setting
 tf.app.flags.DEFINE_string('training_data_path', '/data/ocr/icdar2015/',
                            'training dataset to use')
 tf.app.flags.DEFINE_string('training_data_path', '/data/ocr/icdar2015/',
@@ -35,13 +36,12 @@ tf.app.flags.DEFINE_float('min_crop_side_ratio', 0.1,
 tf.app.flags.DEFINE_string('geometry', 'RBOX',
                            'which geometry to generate, RBOX or QUAD')
 
-
-
-#infer
-tf.app.flags.DEFINE_string('test_data_dir', '/data/ocr/icdar2015/images')
+# inference setting
+tf.app.flags.DEFINE_string('test_data_path', '/tmp/ch4_test_images/images/', '')
+tf.app.flags.DEFINE_string('gpu_list', '0', '')
+tf.app.flags.DEFINE_string('checkpoint_path', '/tmp/east_icdar2015_resnet_v1_50_rbox/', '')
 tf.app.flags.DEFINE_string('output_dir', '/data/ocr/icdar2015/inference')
-
-tf.app.flags.DEFINE_string('is_write_images', True, 'if save images or not')
+tf.app.flags.DEFINE_bool('no_write_images', False, 'do not write images')
 tf.app.flags.DEFINE_string('max_side_length', 512, 'max side length')
 tf.app.flags.DEFINE_string('save_score_map', False, 'if save score map or not')
 tf.app.flags.DEFINE_string('enable_box_refinement', False, 'refine boxes')

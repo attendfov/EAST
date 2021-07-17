@@ -1,3 +1,4 @@
+# _*_ coding: utf-8 _*_
 '''
 this file is modified from keras implemention of data process multi-threading,
 see https://github.com/fchollet/keras/blob/master/keras/utils/data_utils.py

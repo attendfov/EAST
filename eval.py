@@ -5,19 +5,13 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import locality_aware_nms as nms_locality
-import lanms
-
-tf.app.flags.DEFINE_string('test_data_path', '/tmp/ch4_test_images/images/', '')
-tf.app.flags.DEFINE_string('gpu_list', '0', '')
-tf.app.flags.DEFINE_string('checkpoint_path', '/tmp/east_icdar2015_resnet_v1_50_rbox/', '')
-tf.app.flags.DEFINE_string('output_dir', '/tmp/ch4_test_images/images/', '')
-tf.app.flags.DEFINE_bool('no_write_images', False, 'do not write images')
-
-import model
-from icdar import restore_rectangle
+from utils import locality_aware_nms as nms_locality
+from utils import lanms
+from models import model
+from layers.data_layer import restore_rectangle
 
 FLAGS = tf.app.flags.FLAGS
+
 
 def get_images():
     '''
@@ -191,6 +185,7 @@ def main(argv=None):
                 if not FLAGS.no_write_images:
                     img_path = os.path.join(FLAGS.output_dir, os.path.basename(im_fn))
                     cv2.imwrite(img_path, im[:, :, ::-1])
+
 
 if __name__ == '__main__':
     tf.app.run()
